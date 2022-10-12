@@ -1,24 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { google } from 'googleapis';
-import * as dotenv from 'dotenv';
-dotenv.config();
-
-const auth = new google.auth.GoogleAuth({
-	keyFile: 'credentials.json',
-	scopes: 'https://www.googleapis.com/auth/spreadsheets'
-});
-
-const sheets = google.sheets({
-  version: 'v4',
-  auth,
-});
-
-const request = {
-  spreadsheetId: process.env.SHEET_ID,
-  range: 'Sheet1!A2:B50',
-  majorDimension: 'ROWS',
-};
+import { sheets } from './sheets';
+import { createSheetsRequest } from './sheets-request';
 
 const PORT = 3000;
 const app = express();
@@ -28,20 +11,22 @@ app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 app.get("/leaderboards", async (req, res) => {
-	const response = await sheets.spreadsheets.values.get(request);
+  const [names, scores] = (await Promise.all(['ScoreSheet!C2:C50', 'ScoreSheet!E2:E50']
+    .map(range => sheets.spreadsheets.values.get(createSheetsRequest(range)))))
+    .map(response => response.data?.values?.map(values => values[0]));
 
-  if (!response.data.values) {
-    return [];
+  if (!names || !scores || names.length !== scores.length) {
+    res.status(500).send(JSON.stringify({ error: 'couldn\'t find names or scores, or they differed in length' }));
+  } else {
+    // map to LeaderboardEntry[], sorted by rank ascending, score descending
+    let rank = 1;
+    const leaderboards = names
+      .map((name, index) => ({ name, score: Number(scores[index]) }))
+      .sort((a, b) => b.score - a.score)
+      .map(entry => ({ rank: rank++, ...entry }));
+
+    res.status(200).send(JSON.stringify({ leaderboards }));
   }
-
-	// map to LeaderboardEntry[], sorted by rank ascending, score descending
-	let rank = 1;
-	const leaderboards = response.data.values
-		.map((row) => ({ name: row[0], score: Number(row[1]) }))
-		.sort((a, b) => b.score - a.score)
-		.map(entry => ({ rank: rank++, ...entry }));
-
-  res.status(200).send(JSON.stringify({ leaderboards }));
 });
 
 app.listen(PORT, () => {
