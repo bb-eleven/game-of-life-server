@@ -12,8 +12,11 @@ export enum MajorDimension {
   COLUMNS = 'COLUMNS',
 }
 
-export const createSheetsRequest = (range: string, majorDimension?: MajorDimension): SheetsRequest => ({
-  spreadsheetId: (process.env.SHEET_ID as string),
+export const createSheetsRequest = (
+  range: string,
+  majorDimension?: MajorDimension
+): SheetsRequest => ({
+  spreadsheetId: process.env.SHEET_ID as string,
   range,
   majorDimension: majorDimension ?? MajorDimension.ROWS,
 });

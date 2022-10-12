@@ -4,8 +4,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const auth = new google.auth.GoogleAuth({
-	keyFile: 'credentials.json',
-	scopes: 'https://www.googleapis.com/auth/spreadsheets'
+  keyFile: 'credentials.json',
+  scopes: 'https://www.googleapis.com/auth/spreadsheets',
 });
 
 export const sheets = google.sheets({
