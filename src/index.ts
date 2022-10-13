@@ -37,6 +37,23 @@ app.get('/leaderboards', async (req, res) => {
   }
 });
 
+app.get('/day', async (req, res) => {
+  let dayVal = (await sheets.spreadsheets.values.get(createSheetsRequest('Website!A2'))).data
+    .values;
+  let day: number;
+
+  if (!dayVal) {
+    day = 1;
+  } else {
+    day = Number(dayVal[0][0]);
+    if (isNaN(day)) {
+      day = 1;
+    }
+  }
+
+  res.status(200).send(JSON.stringify({ day }));
+});
+
 app.listen(PORT, () => {
   console.log(`server started at port ${PORT}`);
 });
