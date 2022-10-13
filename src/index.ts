@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { sheets } from './sheets';
-import { createSheetsRequest } from './sheets-request';
+import { createSheetsRequest, MajorDimension } from './sheets-request';
+import { fromPercentage } from './utils';
 
 const PORT = 3000;
 const app = express();
@@ -52,6 +53,56 @@ app.get('/day', async (req, res) => {
   }
 
   res.status(200).send(JSON.stringify({ day }));
+});
+
+app.get('/news/:day', async (req, res) => {
+  let dayVal = req.params.day;
+  let day: number;
+
+  if (!dayVal) {
+    day = 1;
+  } else {
+    day = Number(dayVal);
+    if (isNaN(day)) {
+      day = 1;
+    } else if (day < 1) {
+      day = 1;
+    } else if (day > 10) {
+      day = 10;
+    }
+  }
+
+  // const recurringData = (await sheets.spreadsheets.values.get(createSheetsRequest()))
+  const sheet = 'Daily Multipliers Tracking!';
+  const getSalesPitchData = sheets.spreadsheets.values
+    .get(createSheetsRequest(sheet + 'C7'))
+    .then((response) => ({ salesPitch: fromPercentage(response?.data?.values?.[0][0]) }));
+
+  const getPropertyInvestmentData = sheets.spreadsheets.values
+    .get(createSheetsRequest(sheet + 'C9:C10', MajorDimension.COLUMNS))
+    .then((response) => {
+      const values = response?.data?.values?.[0];
+      return {
+        propertyInvestment: {
+          rentalYield: fromPercentage(values?.[0]),
+          propertyValue: fromPercentage(values?.[1]),
+        },
+      };
+    });
+
+  const getLifeInsurancePenaltyData = sheets.spreadsheets.values
+    .get(createSheetsRequest(sheet + 'C15'))
+    .then((response) => ({ lifeInsurancePenalty: Number(response?.data?.values?.[0][0]) }));
+
+  const values = await Promise.all([
+    getSalesPitchData,
+    getPropertyInvestmentData,
+    getLifeInsurancePenaltyData,
+  ]);
+
+  const recurringData = Object.assign({}, ...values);
+
+  res.status(200).send(JSON.stringify({ recurringData }));
 });
 
 app.listen(PORT, () => {
