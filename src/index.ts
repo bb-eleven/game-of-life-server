@@ -2,7 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { sheets } from './sheets';
 import { createSheetsRequest, MajorDimension } from './sheets-request';
-import { fromPercentage } from './utils';
+import { fromPercentage, toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
+import { News, NewsItem, NewsItemRow, RecurringNewsItems } from './news';
+import { recaptchaenterprise } from 'googleapis/build/src/apis/recaptchaenterprise';
+import { Key } from 'readline';
 
 const PORT = 3000;
 const app = express();
@@ -55,54 +58,48 @@ app.get('/day', async (req, res) => {
   res.status(200).send(JSON.stringify({ day }));
 });
 
-app.get('/news/:day', async (req, res) => {
-  let dayVal = req.params.day;
-  let day: number;
+app.get('/news', async (req, res) => {
+  // 9 rows
+  const newsData = (await sheets.spreadsheets.values.get(createSheetsRequest('Website!G5:K13')))
+    .data.values;
 
-  if (!dayVal) {
-    day = 1;
-  } else {
-    day = Number(dayVal);
-    if (isNaN(day)) {
-      day = 1;
-    } else if (day < 1) {
-      day = 1;
-    } else if (day > 10) {
-      day = 10;
+  const recurringNewsItems: RecurringNewsItems = {
+    propertyValue: [],
+    rentalYield: [],
+    salesPitch: [],
+    lifeInsurance: [],
+  };
+
+  if (!newsData) {
+    res
+      .status(200)
+      .send(JSON.stringify({ news: { interestingInfo: null, ...recurringNewsItems } }));
+    return;
+  }
+
+  const recurringNewsItemsKeys = Object.keys(recurringNewsItems);
+
+  for (let i = 1; i < 9; i++) {
+    const recurringNewsItemsRow = newsData[i];
+    console.log(recurringNewsItemsRow);
+    if (toBoolean(recurringNewsItemsRow[TO_SHOW_INDEX])) {
+      recurringNewsItems[
+        recurringNewsItemsKeys[Math.floor((i - 1) / 2)] as keyof RecurringNewsItems
+      ].push(toNewsItem(recurringNewsItemsRow));
     }
   }
 
-  // const recurringData = (await sheets.spreadsheets.values.get(createSheetsRequest()))
-  const sheet = 'Daily Multipliers Tracking!';
-  const getSalesPitchData = sheets.spreadsheets.values
-    .get(createSheetsRequest(sheet + 'C7'))
-    .then((response) => ({ salesPitch: fromPercentage(response?.data?.values?.[0][0]) }));
+  let news: News = {
+    ...recurringNewsItems,
+    interestingInfo: null,
+  };
 
-  const getPropertyInvestmentData = sheets.spreadsheets.values
-    .get(createSheetsRequest(sheet + 'C9:C10', MajorDimension.COLUMNS))
-    .then((response) => {
-      const values = response?.data?.values?.[0];
-      return {
-        propertyInvestment: {
-          rentalYield: fromPercentage(values?.[0]),
-          propertyValue: fromPercentage(values?.[1]),
-        },
-      };
-    });
+  const interestingInfoRow = newsData[0];
+  if (toBoolean(interestingInfoRow[TO_SHOW_INDEX])) {
+    news.interestingInfo = toNewsItem(interestingInfoRow);
+  }
 
-  const getLifeInsurancePenaltyData = sheets.spreadsheets.values
-    .get(createSheetsRequest(sheet + 'C15'))
-    .then((response) => ({ lifeInsurancePenalty: Number(response?.data?.values?.[0][0]) }));
-
-  const values = await Promise.all([
-    getSalesPitchData,
-    getPropertyInvestmentData,
-    getLifeInsurancePenaltyData,
-  ]);
-
-  const recurringData = Object.assign({}, ...values);
-
-  res.status(200).send(JSON.stringify({ recurringData }));
+  res.status(200).send(JSON.stringify({ news }));
 });
 
 app.listen(PORT, () => {
