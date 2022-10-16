@@ -1,11 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import { sheets } from './sheets';
-import { createSheetsRequest, MajorDimension } from './sheets-request';
-import { fromPercentage, toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
-import { News, NewsItem, NewsItemRow, RecurringNewsItems } from './news';
-import { recaptchaenterprise } from 'googleapis/build/src/apis/recaptchaenterprise';
-import { Key } from 'readline';
+import { createSheetsRequest } from './sheets-request';
+import { toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
+import { News, RecurringNewsItems } from './news';
 
 const PORT = 3000;
 const app = express();
