@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { sheets } from './sheets';
 import { createSheetsRequest } from './sheets-request';
-import { toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
+import { CONTENT_INDEX, toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
 import { News, RecurringNewsItems } from './news';
 
 const PORT = 3000;
@@ -79,8 +79,7 @@ app.get('/news', async (req, res) => {
 
   for (let i = 1; i < 9; i++) {
     const recurringNewsItemsRow = newsData[i];
-    console.log(recurringNewsItemsRow);
-    if (toBoolean(recurringNewsItemsRow[TO_SHOW_INDEX])) {
+    if (recurringNewsItemsRow[CONTENT_INDEX] && toBoolean(recurringNewsItemsRow[TO_SHOW_INDEX])) {
       recurringNewsItems[
         recurringNewsItemsKeys[Math.floor((i - 1) / 2)] as keyof RecurringNewsItems
       ].push(toNewsItem(recurringNewsItemsRow));
