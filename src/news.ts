@@ -3,15 +3,9 @@ export interface NewsItem {
   content: string;
 }
 
-export type NewsItemRow = NewsItem[];
-
-export interface News extends RecurringNewsItems {
-  interestingInfo: NewsItem | null;
+export interface NewsItemGroup {
+  name: string;
+  items: NewsItem[];
 }
 
-export interface RecurringNewsItems {
-  propertyValue: NewsItemRow;
-  rentalYield: NewsItemRow;
-  salesPitch: NewsItemRow;
-  lifeInsurance: NewsItemRow;
-}
+export type News = NewsItemGroup[];

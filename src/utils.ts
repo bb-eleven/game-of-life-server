@@ -8,9 +8,12 @@ export const IS_POSITIVE_INDEX = 2;
 export const TO_SHOW_INDEX = 3;
 export const CONTENT_INDEX = 4;
 
-export const toNewsItem = (row: any[]): NewsItem => {
+export const toNewsItem = (newsItemData: any[]): NewsItem | null => {
+  if (!newsItemData[CONTENT_INDEX] || !toBoolean(newsItemData[TO_SHOW_INDEX])) {
+    return null;
+  }
   return {
-    neutrality: Number(row[IS_POSITIVE_INDEX]),
-    content: row[CONTENT_INDEX],
+    neutrality: Number(newsItemData[IS_POSITIVE_INDEX]),
+    content: newsItemData[CONTENT_INDEX],
   };
 };
