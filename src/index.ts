@@ -84,7 +84,7 @@ app.get('/news', async (req, res) => {
   const recurringNewsItemsData = newsData.slice(1);
   recurringNewsItemsNames.map((name, index) => {
     const newsItems: NewsItem[] = [];
-    for (let i = index * 2; i < index * 2 + 1; i++) {
+    for (let i = index * 2; i <= index * 2 + 1; i++) {
       const newsItem = toNewsItem(recurringNewsItemsData[i]);
       if (newsItem) {
         newsItems.push(newsItem);
