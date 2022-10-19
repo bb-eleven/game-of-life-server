@@ -58,7 +58,7 @@ app.get('/day', async (req, res) => {
 
 app.get('/news', async (req, res) => {
   // 9 rows
-  const newsData = (await sheets.spreadsheets.values.get(createSheetsRequest('Website!G5:K13')))
+  const newsData = (await sheets.spreadsheets.values.get(createSheetsRequest('Website!G6:K14')))
     .data.values;
 
   const news: News = [];
