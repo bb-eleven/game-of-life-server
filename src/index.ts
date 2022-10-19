@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { sheets } from './sheets';
 import { createSheetsRequest } from './sheets-request';
-import { CONTENT_INDEX, toBoolean, toNewsItem, TO_SHOW_INDEX } from './utils';
-import { News, RecurringNewsItems } from './news';
+import { toNewsItem } from './utils';
+import { News, NewsItem } from './news';
 
 const PORT = 3000;
 const app = express();
@@ -61,40 +61,40 @@ app.get('/news', async (req, res) => {
   const newsData = (await sheets.spreadsheets.values.get(createSheetsRequest('Website!G5:K13')))
     .data.values;
 
-  const recurringNewsItems: RecurringNewsItems = {
-    propertyValue: [],
-    rentalYield: [],
-    salesPitch: [],
-    lifeInsurance: [],
-  };
+  const news: News = [];
 
   if (!newsData) {
-    res
-      .status(200)
-      .send(JSON.stringify({ news: { interestingInfo: null, ...recurringNewsItems } }));
+    res.status(200).send(JSON.stringify({ news }));
     return;
   }
 
-  const recurringNewsItemsKeys = Object.keys(recurringNewsItems);
+  const interestingInfoNewsItem = toNewsItem(newsData[0]);
+  if (interestingInfoNewsItem) {
+    news.push({ name: 'Interesting info', items: [interestingInfoNewsItem] });
+  }
 
-  for (let i = 1; i < 9; i++) {
-    const recurringNewsItemsRow = newsData[i];
-    if (recurringNewsItemsRow[CONTENT_INDEX] && toBoolean(recurringNewsItemsRow[TO_SHOW_INDEX])) {
-      recurringNewsItems[
-        recurringNewsItemsKeys[Math.floor((i - 1) / 2)] as keyof RecurringNewsItems
-      ].push(toNewsItem(recurringNewsItemsRow));
+  // recurring news items names in order
+  const recurringNewsItemsNames = [
+    'Property value',
+    'Rental yield',
+    'Sales pitch',
+    'Life insurance',
+  ];
+
+  const recurringNewsItemsData = newsData.slice(1);
+  recurringNewsItemsNames.map((name, index) => {
+    const newsItems: NewsItem[] = [];
+    for (let i = index * 2; i < index * 2 + 1; i++) {
+      const newsItem = toNewsItem(recurringNewsItemsData[i]);
+      if (newsItem) {
+        newsItems.push(newsItem);
+      }
     }
-  }
 
-  let news: News = {
-    ...recurringNewsItems,
-    interestingInfo: null,
-  };
-
-  const interestingInfoRow = newsData[0];
-  if (toBoolean(interestingInfoRow[TO_SHOW_INDEX])) {
-    news.interestingInfo = toNewsItem(interestingInfoRow);
-  }
+    if (newsItems.length > 0) {
+      news.push({ name, items: newsItems });
+    }
+  });
 
   res.status(200).send(JSON.stringify({ news }));
 });
