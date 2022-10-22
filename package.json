@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -b",
     "start": "node ./dist/index.js",
     "prepare": "husky install",
     "format": "prettier --write ."
